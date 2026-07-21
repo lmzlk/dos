@@ -78,6 +78,10 @@ export async function POST(req: Request) {
               ? (t.estimate as number)
               : undefined,
           due: typeof t.due === "string" && t.due ? (t.due as string) : undefined,
+          remindAt:
+            typeof t.remindAt === "string" && /^\d{1,2}:\d{2}$/.test(t.remindAt)
+              ? (t.remindAt as string)
+              : undefined,
           assignee: ["Mom", "Dad", "Kid"].includes(t.assignee as string)
             ? (t.assignee as Assignee)
             : "",
@@ -99,13 +103,42 @@ export async function POST(req: Request) {
       return NextResponse.json({ tasks: next });
     }
 
-    if (action === "assign" && typeof body.id === "string") {
-      const a = ["Mom", "Dad", "Kid", ""].includes(body.assignee as string)
-        ? (body.assignee as Assignee)
-        : "";
-      const next = tasks.map((t) =>
-        t.id === body.id ? { ...t, assignee: a } : t,
-      );
+    if (
+      action === "update" &&
+      typeof body.id === "string" &&
+      body.patch &&
+      typeof body.patch === "object"
+    ) {
+      const patch = body.patch as Record<string, unknown>;
+      const next = tasks.map((t) => {
+        if (t.id !== body.id) return t;
+        const u: Task = { ...t };
+        if ("assignee" in patch) {
+          u.assignee = ["Mom", "Dad", "Kid"].includes(patch.assignee as string)
+            ? (patch.assignee as Assignee)
+            : "";
+        }
+        if (
+          "priority" in patch &&
+          ["high", "medium", "low"].includes(patch.priority as string)
+        ) {
+          u.priority = patch.priority as Task["priority"];
+        }
+        if (
+          "title" in patch &&
+          typeof patch.title === "string" &&
+          patch.title.trim()
+        ) {
+          u.title = (patch.title as string).trim();
+        }
+        if ("remindAt" in patch) {
+          u.remindAt =
+            typeof patch.remindAt === "string" && /^\d{1,2}:\d{2}$/.test(patch.remindAt)
+              ? (patch.remindAt as string)
+              : undefined;
+        }
+        return u;
+      });
       await writeTasks(next);
       return NextResponse.json({ tasks: next });
     }

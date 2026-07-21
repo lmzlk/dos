@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Task, Assignee } from "./types";
+import type { Task, TaskPatch } from "./types";
 
 type NewTask = Partial<Task> & { title: string };
 
@@ -72,8 +72,8 @@ export function useTasks() {
     (id: string) => send({ action: "toggle", id }),
     [send],
   );
-  const assignTask = useCallback(
-    (id: string, assignee: Assignee) => send({ action: "assign", id, assignee }),
+  const updateTask = useCallback(
+    (id: string, patch: TaskPatch) => send({ action: "update", id, patch }),
     [send],
   );
   const removeTask = useCallback(
@@ -89,7 +89,7 @@ export function useTasks() {
     hydrated,
     addTasks,
     toggleTask,
-    assignTask,
+    updateTask,
     removeTask,
     refresh,
   };

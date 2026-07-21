@@ -1,5 +1,4 @@
-// Core task model for dos. Fields are laid out now even though the
-// AI parsing layer that fills them will come later.
+// Core task model for dos (shared family day planner).
 
 export type Priority = "high" | "medium" | "low";
 export type Assignee = "Mom" | "Dad" | "Kid" | "";
@@ -11,9 +10,18 @@ export interface Task {
   priority: Priority;
   estimate?: number; // minutes, optional
   due?: string; // ISO date string, optional
+  remindAt?: string; // local wall-clock "HH:MM", optional (in-app reminder)
   assignee: Assignee;
   status: Status;
   createdAt: string; // ISO date-time string
 }
 
-export const ASSIGNEES: Assignee[] = ["Mom", "Dad", "Kid"];
+// A partial change applied to a task via /api/tasks (action: "update").
+export interface TaskPatch {
+  title?: string;
+  priority?: Priority;
+  assignee?: Assignee;
+  remindAt?: string; // "" clears the reminder
+}
+
+export const ASSIGNEES: Exclude<Assignee, "">[] = ["Mom", "Dad", "Kid"];

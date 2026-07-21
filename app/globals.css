@@ -8,6 +8,10 @@
   --accent: #b6f09c;
   --accent-strong: #9be27c;
   --danger: #f0a09c;
+  --warn: #f0d68c;
+  --mom: #f2a7cc;
+  --dad: #93b8f2;
+  --kid: #f0cf8c;
   --tabbar-h: 76px;
 }
 
@@ -155,6 +159,16 @@ textarea {
 .capture__mic:active {
   transform: scale(0.94);
 }
+.capture__mic--on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0e0f13;
+  animation: micpulse 1.2s ease-in-out infinite;
+}
+@keyframes micpulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(182, 240, 156, 0.5); }
+  50% { box-shadow: 0 0 0 10px rgba(182, 240, 156, 0); }
+}
 .capture__mic svg {
   width: 30px;
   height: 30px;
@@ -174,12 +188,19 @@ textarea {
 }
 
 .task {
-  display: flex;
-  align-items: center;
-  gap: 14px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 16px;
+  overflow: hidden;
+}
+.task--overdue {
+  border-color: rgba(240, 160, 156, 0.55);
+}
+
+.task__row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
   padding: 16px;
 }
 
@@ -207,6 +228,8 @@ textarea {
 .task__body {
   flex: 1;
   min-width: 0;
+  text-align: left;
+  background: none;
 }
 
 .task__title {
@@ -234,22 +257,143 @@ textarea {
   border-radius: 999px;
   background: var(--surface-2);
   color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.chip svg {
+  width: 12px;
+  height: 12px;
 }
 .chip--assignee {
   background: rgba(182, 240, 156, 0.14);
   color: var(--accent);
+}
+.chip--mom {
+  background: rgba(242, 167, 204, 0.16);
+  color: var(--mom);
+}
+.chip--dad {
+  background: rgba(147, 184, 242, 0.16);
+  color: var(--dad);
+}
+.chip--kid {
+  background: rgba(240, 207, 140, 0.16);
+  color: var(--kid);
 }
 .chip--high {
   background: rgba(240, 160, 156, 0.16);
   color: var(--danger);
 }
 .chip--medium {
-  background: rgba(182, 240, 156, 0.14);
-  color: var(--accent);
+  background: rgba(240, 214, 140, 0.16);
+  color: var(--warn);
 }
 .chip--low {
   background: var(--surface-2);
   color: var(--muted);
+}
+.chip--time,
+.chip--due {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+.chip--rem-soon {
+  background: rgba(240, 214, 140, 0.18);
+  color: var(--warn);
+}
+.chip--rem-overdue {
+  background: rgba(240, 160, 156, 0.18);
+  color: var(--danger);
+}
+
+/* ---- Task detail (tap to edit) ---- */
+.task__detail {
+  border-top: 1px solid var(--border);
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.task__field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.task__label {
+  font-size: 13px;
+  color: var(--muted);
+  width: 52px;
+  flex: 0 0 auto;
+}
+.task__opts {
+  display: flex;
+  gap: 8px;
+}
+.opt {
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--surface-2);
+  color: var(--muted);
+  border: 1px solid transparent;
+}
+.opt--on.opt--mom {
+  background: rgba(242, 167, 204, 0.18);
+  color: var(--mom);
+  border-color: var(--mom);
+}
+.opt--on.opt--dad {
+  background: rgba(147, 184, 242, 0.18);
+  color: var(--dad);
+  border-color: var(--dad);
+}
+.opt--on.opt--kid {
+  background: rgba(240, 207, 140, 0.18);
+  color: var(--kid);
+  border-color: var(--kid);
+}
+.task__time {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  padding: 8px 12px;
+  font-size: 15px;
+  color-scheme: dark;
+}
+.task__clear {
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: underline;
+}
+.task__delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  align-self: flex-start;
+  color: var(--danger);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 6px 2px;
+}
+.task__delete svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ---- Reminder banner ---- */
+.banner {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(240, 214, 140, 0.14);
+  color: var(--warn);
+  font-size: 14px;
+  font-weight: 600;
 }
 
 /* ---- Empty states ---- */

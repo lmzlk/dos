@@ -7,6 +7,7 @@ type ParsedTask = {
   priority: "high" | "medium" | "low";
   estimate: number | null;
   due: string | null;
+  remindAt: string | null;
   assignee: "Mom" | "Dad" | "Kid" | "";
 };
 
@@ -42,7 +43,8 @@ Return ONLY a JSON array (no prose, no markdown fences) where each item has:
 - "title": short actionable task text (string)
 - "priority": "high" | "medium" | "low"
 - "estimate": estimated minutes as a number, or null
-- "due": due date as "YYYY-MM-DD", or null
+- "due": deadline date as "YYYY-MM-DD", or null
+- "remindAt": time of day as "HH:MM" (24h) if a time is mentioned, or null
 - "assignee": one of "Mom", "Dad", "Kid", or "" if unclear
 
 Rules:
@@ -123,10 +125,14 @@ function extractTasks(raw: string): ParsedTask[] {
           typeof t.due === "string" && /^\d{4}-\d{2}-\d{2}/.test(t.due)
             ? t.due
             : null;
+        const remindAt =
+          typeof t.remindAt === "string" && /^\d{1,2}:\d{2}$/.test(t.remindAt)
+            ? t.remindAt
+            : null;
         const assignee = ["Mom", "Dad", "Kid"].includes(t.assignee as string)
           ? (t.assignee as ParsedTask["assignee"])
           : "";
-        return { title, priority, estimate, due, assignee };
+        return { title, priority, estimate, due, remindAt, assignee };
       })
       .filter((t) => t.title.length > 0);
   } catch {

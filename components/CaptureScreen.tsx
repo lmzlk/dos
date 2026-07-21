@@ -1,10 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MicIcon } from "./icons";
 import type { Task } from "@/lib/types";
 
 type NewTask = Partial<Task> & { title: string };
+
+// Minimal typing for the Web Speech API (not in TS lib DOM by default).
+type SpeechRecognitionLike = {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  start: () => void;
+  stop: () => void;
+  onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
+  onend: (() => void) | null;
+  onerror: (() => void) | null;
+};
+
+function getRecognition(): SpeechRecognitionLike | null {
+  if (typeof window === "undefined") return null;
+  const w = window as unknown as {
+    SpeechRecognition?: new () => SpeechRecognitionLike;
+    webkitSpeechRecognition?: new () => SpeechRecognitionLike;
+  };
+  const Ctor = w.SpeechRecognition || w.webkitSpeechRecognition;
+  return Ctor ? new Ctor() : null;
+}
 
 export function CaptureScreen({
   onCapture,
@@ -13,15 +35,24 @@ export function CaptureScreen({
 }) {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [listening, setListening] = useState(false);
+  const [hint, setHint] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const recRef = useRef<SpeechRecognitionLike | null>(null);
+  const baseRef = useRef("");
 
   const canSave = text.trim().length > 0 && !loading;
+
+  useEffect(() => {
+    return () => recRef.current?.stop();
+  }, []);
 
   async function handleSave() {
     const raw = text.trim();
     if (!raw || loading) return;
+    recRef.current?.stop();
     setLoading(true);
-    setError("");
+    setHint("");
     try {
       const res = await fetch("/api/parse", {
         method: "POST",
@@ -32,16 +63,48 @@ export function CaptureScreen({
       const tasks: NewTask[] =
         res.ok && Array.isArray(data.tasks) && data.tasks.length > 0
           ? data.tasks
-          : [{ title: raw }]; // fallback: keep the raw dump as one task
+          : [{ title: raw }];
       onCapture(tasks);
       setText("");
     } catch {
       onCapture([{ title: raw }]);
       setText("");
-      setError("Saved without AI (network issue).");
+      setHint("Saved without AI (network issue).");
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleMic() {
+    if (loading) return;
+    if (listening) {
+      recRef.current?.stop();
+      return;
+    }
+    const rec = getRecognition();
+    if (!rec) {
+      // iOS Safari & co: no in-page recognition — use the keyboard mic.
+      textareaRef.current?.focus();
+      setHint("Tap the 🎤 on your keyboard to dictate.");
+      return;
+    }
+    baseRef.current = text ? text.trimEnd() + " " : "";
+    rec.lang = navigator.language || "en-US";
+    rec.interimResults = true;
+    rec.continuous = false;
+    rec.onresult = (e) => {
+      let transcript = "";
+      for (let i = 0; i < e.results.length; i++) {
+        transcript += e.results[i][0].transcript;
+      }
+      setText(baseRef.current + transcript);
+    };
+    rec.onend = () => setListening(false);
+    rec.onerror = () => setListening(false);
+    recRef.current = rec;
+    setHint("");
+    setListening(true);
+    rec.start();
   }
 
   return (
@@ -52,6 +115,7 @@ export function CaptureScreen({
         </div>
 
         <textarea
+          ref={textareaRef}
           className="capture__input"
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -69,9 +133,10 @@ export function CaptureScreen({
             {loading ? "Thinking…" : "Add to inbox"}
           </button>
           <button
-            className="capture__mic"
-            aria-label="Voice input — tap the mic on your keyboard"
-            title="Voice input — tap the mic on your keyboard"
+            className={`capture__mic${listening ? " capture__mic--on" : ""}`}
+            onClick={handleMic}
+            aria-label="Voice input"
+            aria-pressed={listening}
             disabled={loading}
           >
             <MicIcon />
@@ -79,7 +144,10 @@ export function CaptureScreen({
         </div>
 
         <p className="capture__hint">
-          {error || "Dump everything — the AI will sort it into tasks."}
+          {hint ||
+            (listening
+              ? "Listening… speak now"
+              : "Dump everything — the AI will sort it into tasks.")}
         </p>
       </div>
     </div>
