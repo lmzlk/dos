@@ -39,11 +39,15 @@ export function TodayScreen({
 }) {
   const remaining = tasks.filter((t) => t.status === "todo").length;
 
-  // In-app reminders: tasks with a time that's now/overdue and not done.
-  const dueNow = tasks.filter((t) => {
-    if (t.status === "done") return false;
-    const mins = minutesUntil(t.remindAt);
-    return mins !== null && mins <= 60;
+  // In-app reminders, split into overdue vs coming up within the hour.
+  const active = tasks.filter((t) => t.status !== "done");
+  const overdue = active.filter((t) => {
+    const m = minutesUntil(t.remindAt);
+    return m !== null && m < 0;
+  }).length;
+  const soon = active.filter((t) => {
+    const m = minutesUntil(t.remindAt);
+    return m !== null && m >= 0 && m <= 60;
   }).length;
 
   const sorted = [...tasks].sort(sortForToday);
@@ -59,11 +63,15 @@ export function TodayScreen({
         </p>
       </header>
 
-      {dueNow > 0 && (
-        <div className="banner">
-          ⏰ {dueNow} {dueNow === 1 ? "task is" : "tasks are"} due now
+      {overdue > 0 ? (
+        <div className="banner banner--overdue">
+          ⏰ {overdue} {overdue === 1 ? "task is" : "tasks are"} overdue
         </div>
-      )}
+      ) : soon > 0 ? (
+        <div className="banner">
+          ⏰ {soon} {soon === 1 ? "task" : "tasks"} coming up soon
+        </div>
+      ) : null}
 
       {tasks.length === 0 ? (
         <EmptyState

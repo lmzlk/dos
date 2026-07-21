@@ -49,12 +49,14 @@ Return ONLY a JSON array (no prose, no markdown fences) where each item has:
 
 Rules:
 - Split multiple tasks; merge obvious duplicates.
-- Infer priority and assignee from context; if unclear use "medium" and "".
-- Map who is responsible to assignee, in any language:
+- Do NOT invent details. Only fill a field if the text actually states it.
+- "assignee": set ONLY if the text names who is responsible, in any language:
   "мама"/"mom"/"mum" -> "Mom"; "тато"/"батько"/"dad" -> "Dad";
-  "дитина"/"син"/"дочка"/"kid"/"child" -> "Kid".
+  "дитина"/"син"/"дочка"/"kid"/"child" -> "Kid". Otherwise "".
   When a word only marks the responsible person, set "assignee" and REMOVE that word from the title.
-- Resolve relative dates (e.g. "tomorrow"/"завтра") against today's date.
+- "remindAt": set ONLY if a specific time of day is mentioned; otherwise null. Never guess a time.
+- "due": set ONLY if a date or deadline is mentioned (resolve "tomorrow"/"завтра"/"friday"/"пʼятниця" against today's date); otherwise null. Never guess a date.
+- "priority": "high" only if urgency is signalled (urgent/asap/терміново/важливо); "low" if clearly minor; otherwise "medium".
 - Keep titles concise and in the same language the user wrote.
 Return [] if there are no real tasks.`;
 
