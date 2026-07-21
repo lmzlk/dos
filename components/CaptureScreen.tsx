@@ -37,6 +37,7 @@ export function CaptureScreen({
   const [loading, setLoading] = useState(false);
   const [listening, setListening] = useState(false);
   const [hint, setHint] = useState("");
+  const [speechSupported, setSpeechSupported] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recRef = useRef<SpeechRecognitionLike | null>(null);
   const baseRef = useRef("");
@@ -44,8 +45,13 @@ export function CaptureScreen({
   const canSave = text.trim().length > 0 && !loading;
 
   useEffect(() => {
+    setSpeechSupported(getRecognition() !== null);
     return () => recRef.current?.stop();
   }, []);
+
+  const defaultHint = speechSupported
+    ? "Dump everything — the AI will sort it into tasks."
+    : "Tip: tap the 🎤 on your keyboard to dictate.";
 
   async function handleSave() {
     const raw = text.trim();
@@ -83,9 +89,9 @@ export function CaptureScreen({
     }
     const rec = getRecognition();
     if (!rec) {
-      // iOS Safari & co: no in-page recognition — use the keyboard mic.
+      // iOS Safari & co: no in-page recognition — open keyboard, use its mic.
       textareaRef.current?.focus();
-      setHint("Tap the 🎤 on your keyboard to dictate.");
+      setHint("Now tap the 🎤 on your keyboard and start talking.");
       return;
     }
     baseRef.current = text ? text.trimEnd() + " " : "";

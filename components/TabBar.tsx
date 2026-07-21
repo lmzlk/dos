@@ -1,13 +1,21 @@
 "use client";
 
-import { CaptureIcon, InboxIcon, TodayIcon } from "./icons";
+import {
+  CaptureIcon,
+  InboxIcon,
+  TodayIcon,
+  WeekIcon,
+  DoneIcon,
+} from "./icons";
 
-export type TabKey = "capture" | "inbox" | "today";
+export type TabKey = "capture" | "inbox" | "today" | "week" | "done";
 
 const TABS: { key: TabKey; label: string; Icon: () => React.ReactElement }[] = [
   { key: "capture", label: "Capture", Icon: CaptureIcon },
   { key: "inbox", label: "Inbox", Icon: InboxIcon },
   { key: "today", label: "Today", Icon: TodayIcon },
+  { key: "week", label: "Week", Icon: WeekIcon },
+  { key: "done", label: "Done", Icon: DoneIcon },
 ];
 
 export function TabBar({

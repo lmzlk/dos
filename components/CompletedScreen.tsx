@@ -4,7 +4,7 @@ import type { Task, TaskPatch } from "@/lib/types";
 import { TaskItem } from "./TaskItem";
 import { EmptyState } from "./EmptyState";
 
-export function InboxScreen({
+export function CompletedScreen({
   tasks,
   onToggle,
   onUpdate,
@@ -18,27 +18,23 @@ export function InboxScreen({
   return (
     <div className="screen">
       <header className="screen__header">
-        <h1 className="screen__title">Inbox</h1>
-        <p className="screen__subtitle">Tap a task to set who, time & more</p>
+        <h1 className="screen__title">Done</h1>
+        <p className="screen__subtitle">
+          {tasks.length === 0
+            ? "Completed tasks land here"
+            : `${tasks.length} completed`}
+        </p>
       </header>
 
       {tasks.length === 0 ? (
         <EmptyState
-          emoji="📥"
-          title="Inbox zero"
-          text="Capture something on the first tab and the AI will drop tasks here."
+          emoji="✅"
+          title="Nothing done yet"
+          text="Check a task off and it moves here. Tap the box again to bring it back."
         />
       ) : (
         <div className="list">
-          {[...tasks]
-            .sort((a, b) =>
-              (a.status === "done") === (b.status === "done")
-                ? 0
-                : a.status === "done"
-                  ? 1
-                  : -1,
-            )
-            .map((task) => (
+          {tasks.map((task) => (
             <TaskItem
               key={task.id}
               task={task}
