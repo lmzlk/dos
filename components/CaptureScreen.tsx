@@ -2,9 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { MicIcon } from "./icons";
-import type { Task } from "@/lib/types";
+import type { Task, Assignee, Priority } from "@/lib/types";
 
 type NewTask = Partial<Task> & { title: string };
+
+const ASSIGNEE_OPTS: Exclude<Assignee, "">[] = ["Mom", "Dad", "Kid"];
+const PRIORITY_OPTS: Priority[] = ["high", "medium", "low"];
 
 // Minimal typing for the Web Speech API (not in TS lib DOM by default).
 type SpeechRecognitionLike = {
@@ -13,7 +16,9 @@ type SpeechRecognitionLike = {
   continuous: boolean;
   start: () => void;
   stop: () => void;
-  onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
+  onresult:
+    | ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void)
+    | null;
   onend: (() => void) | null;
   onerror: (() => void) | null;
 };
@@ -38,6 +43,13 @@ export function CaptureScreen({
   const [listening, setListening] = useState(false);
   const [hint, setHint] = useState("");
   const [speechSupported, setSpeechSupported] = useState(true);
+
+  // Optional per-capture defaults (override the AI when set).
+  const [assignee, setAssignee] = useState<Assignee>("");
+  const [priority, setPriority] = useState<Priority | "">("");
+  const [due, setDue] = useState("");
+  const [remindAt, setRemindAt] = useState("");
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recRef = useRef<SpeechRecognitionLike | null>(null);
   const baseRef = useRef("");
@@ -53,6 +65,24 @@ export function CaptureScreen({
     ? "Dump everything — the AI will sort it into tasks."
     : "Tip: tap the 🎤 on your keyboard to dictate.";
 
+  function applyDefaults(tasks: NewTask[]): NewTask[] {
+    return tasks.map((t) => ({
+      ...t,
+      ...(assignee ? { assignee } : {}),
+      ...(priority ? { priority } : {}),
+      ...(due ? { due } : {}),
+      ...(remindAt ? { remindAt } : {}),
+    }));
+  }
+
+  function resetControls() {
+    setText("");
+    setAssignee("");
+    setPriority("");
+    setDue("");
+    setRemindAt("");
+  }
+
   async function handleSave() {
     const raw = text.trim();
     if (!raw || loading) return;
@@ -66,15 +96,15 @@ export function CaptureScreen({
         body: JSON.stringify({ text: raw }),
       });
       const data = await res.json();
-      const tasks: NewTask[] =
+      const base: NewTask[] =
         res.ok && Array.isArray(data.tasks) && data.tasks.length > 0
           ? data.tasks
           : [{ title: raw }];
-      onCapture(tasks);
-      setText("");
+      onCapture(applyDefaults(base));
+      resetControls();
     } catch {
-      onCapture([{ title: raw }]);
-      setText("");
+      onCapture(applyDefaults([{ title: raw }]));
+      resetControls();
       setHint("Saved without AI (network issue).");
     } finally {
       setLoading(false);
@@ -89,7 +119,6 @@ export function CaptureScreen({
     }
     const rec = getRecognition();
     if (!rec) {
-      // iOS Safari & co: no in-page recognition — open keyboard, use its mic.
       textareaRef.current?.focus();
       setHint("Now tap the 🎤 on your keyboard and start talking.");
       return;
@@ -130,6 +159,51 @@ export function CaptureScreen({
           disabled={loading}
         />
 
+        <div className="capture__opts">
+          <div className="capture__who">
+            {ASSIGNEE_OPTS.map((a) => (
+              <button
+                key={a}
+                type="button"
+                className={`opt opt--${a.toLowerCase()}${
+                  assignee === a ? " opt--on" : ""
+                }`}
+                onClick={() => setAssignee(assignee === a ? "" : a)}
+              >
+                {a}
+              </button>
+            ))}
+          </div>
+          <div className="capture__who">
+            {PRIORITY_OPTS.map((p) => (
+              <button
+                key={p}
+                type="button"
+                className={`opt opt--${p}${priority === p ? " opt--on" : ""}`}
+                onClick={() => setPriority(priority === p ? "" : p)}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+          <div className="capture__when">
+            <input
+              className="capture__date"
+              type="date"
+              value={due}
+              onChange={(e) => setDue(e.target.value)}
+              aria-label="Deadline date"
+            />
+            <input
+              className="capture__time-in"
+              type="time"
+              value={remindAt}
+              onChange={(e) => setRemindAt(e.target.value)}
+              aria-label="Reminder time"
+            />
+          </div>
+        </div>
+
         <div className="capture__actions">
           <button
             className="capture__save"
@@ -150,10 +224,7 @@ export function CaptureScreen({
         </div>
 
         <p className="capture__hint">
-          {hint ||
-            (listening
-              ? "Listening… speak now"
-              : "Dump everything — the AI will sort it into tasks.")}
+          {hint || (listening ? "Listening… speak now" : defaultHint)}
         </p>
       </div>
     </div>

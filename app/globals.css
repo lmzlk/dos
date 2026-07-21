@@ -119,6 +119,35 @@ textarea {
   border-color: var(--accent);
 }
 
+.capture__opts {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.capture__who {
+  display: flex;
+  gap: 8px;
+}
+.capture__who .opt {
+  flex: 1;
+}
+.capture__when {
+  display: flex;
+  gap: 8px;
+}
+.capture__date,
+.capture__time-in {
+  flex: 1;
+  min-width: 0;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  padding: 12px 14px;
+  font-size: 15px;
+  color-scheme: dark;
+}
+
 .capture__actions {
   display: flex;
   align-items: center;
@@ -354,6 +383,24 @@ textarea {
   background: rgba(240, 207, 140, 0.18);
   color: var(--kid);
   border-color: var(--kid);
+}
+.opt--on.opt--high {
+  background: rgba(240, 160, 156, 0.18);
+  color: var(--danger);
+  border-color: var(--danger);
+}
+.opt--on.opt--medium {
+  background: rgba(240, 214, 140, 0.18);
+  color: var(--warn);
+  border-color: var(--warn);
+}
+.opt--on.opt--low {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--border);
+}
+.opt {
+  text-transform: capitalize;
 }
 .task__time {
   background: var(--surface-2);
