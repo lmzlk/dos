@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import type { Task, TaskPatch, Assignee } from "@/lib/types";
+import type { Task, TaskPatch, Assignee, Priority } from "@/lib/types";
 import { CheckIcon, ClockIcon, CalendarIcon, TrashIcon } from "./icons";
 
 const ASSIGNEE_OPTS: Exclude<Assignee, "">[] = ["Mom", "Dad", "Kid"];
+const PRIORITY_OPTS: Priority[] = ["high", "medium", "low"];
 
 // remindAt is a local "HH:MM" — interpret it against today's local time.
 function reminderState(
@@ -101,6 +102,23 @@ export function TaskItem({
       {open && editable && (
         <div className="task__detail">
           <div className="task__field">
+            <span className="task__label">Priority</span>
+            <div className="task__opts">
+              {PRIORITY_OPTS.map((p) => (
+                <button
+                  key={p}
+                  className={`opt opt--${p}${
+                    task.priority === p ? " opt--on" : ""
+                  }`}
+                  onClick={() => onUpdate!(task.id, { priority: p })}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="task__field">
             <span className="task__label">Who</span>
             <div className="task__opts">
               {ASSIGNEE_OPTS.map((a) => (
@@ -119,6 +137,24 @@ export function TaskItem({
                 </button>
               ))}
             </div>
+          </div>
+
+          <div className="task__field">
+            <span className="task__label">Deadline</span>
+            <input
+              className="task__time"
+              type="date"
+              value={task.due ?? ""}
+              onChange={(e) => onUpdate!(task.id, { due: e.target.value || "" })}
+            />
+            {task.due && (
+              <button
+                className="task__clear"
+                onClick={() => onUpdate!(task.id, { due: "" })}
+              >
+                Clear
+              </button>
+            )}
           </div>
 
           <div className="task__field">

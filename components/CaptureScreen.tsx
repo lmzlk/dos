@@ -1,37 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { MicIcon } from "./icons";
-import type { Task, Assignee, Priority } from "@/lib/types";
+import { useState } from "react";
+import { SparkleIcon, MicIcon } from "./icons";
+import type { Task } from "@/lib/types";
 
 type NewTask = Partial<Task> & { title: string };
-
-const ASSIGNEE_OPTS: Exclude<Assignee, "">[] = ["Mom", "Dad", "Kid"];
-const PRIORITY_OPTS: Priority[] = ["high", "medium", "low"];
-
-// Minimal typing for the Web Speech API (not in TS lib DOM by default).
-type SpeechRecognitionLike = {
-  lang: string;
-  interimResults: boolean;
-  continuous: boolean;
-  start: () => void;
-  stop: () => void;
-  onresult:
-    | ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void)
-    | null;
-  onend: (() => void) | null;
-  onerror: (() => void) | null;
-};
-
-function getRecognition(): SpeechRecognitionLike | null {
-  if (typeof window === "undefined") return null;
-  const w = window as unknown as {
-    SpeechRecognition?: new () => SpeechRecognitionLike;
-    webkitSpeechRecognition?: new () => SpeechRecognitionLike;
-  };
-  const Ctor = w.SpeechRecognition || w.webkitSpeechRecognition;
-  return Ctor ? new Ctor() : null;
-}
 
 export function CaptureScreen({
   onCapture,
@@ -40,53 +13,13 @@ export function CaptureScreen({
 }) {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
-  const [listening, setListening] = useState(false);
   const [hint, setHint] = useState("");
-  const [speechSupported, setSpeechSupported] = useState(true);
-
-  // Optional per-capture defaults (override the AI when set).
-  const [assignee, setAssignee] = useState<Assignee>("");
-  const [priority, setPriority] = useState<Priority | "">("");
-  const [due, setDue] = useState("");
-  const [remindAt, setRemindAt] = useState("");
-
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const recRef = useRef<SpeechRecognitionLike | null>(null);
-  const baseRef = useRef("");
 
   const canSave = text.trim().length > 0 && !loading;
-
-  useEffect(() => {
-    setSpeechSupported(getRecognition() !== null);
-    return () => recRef.current?.stop();
-  }, []);
-
-  const defaultHint = speechSupported
-    ? "Dump everything — the AI will sort it into tasks."
-    : "Tip: tap the 🎤 on your keyboard to dictate.";
-
-  function applyDefaults(tasks: NewTask[]): NewTask[] {
-    return tasks.map((t) => ({
-      ...t,
-      ...(assignee ? { assignee } : {}),
-      ...(priority ? { priority } : {}),
-      ...(due ? { due } : {}),
-      ...(remindAt ? { remindAt } : {}),
-    }));
-  }
-
-  function resetControls() {
-    setText("");
-    setAssignee("");
-    setPriority("");
-    setDue("");
-    setRemindAt("");
-  }
 
   async function handleSave() {
     const raw = text.trim();
     if (!raw || loading) return;
-    recRef.current?.stop();
     setLoading(true);
     setHint("");
     try {
@@ -96,135 +29,68 @@ export function CaptureScreen({
         body: JSON.stringify({ text: raw }),
       });
       const data = await res.json();
-      const base: NewTask[] =
+      const tasks: NewTask[] =
         res.ok && Array.isArray(data.tasks) && data.tasks.length > 0
           ? data.tasks
           : [{ title: raw }];
-      onCapture(applyDefaults(base));
-      resetControls();
+      onCapture(tasks);
+      setText("");
     } catch {
-      onCapture(applyDefaults([{ title: raw }]));
-      resetControls();
+      onCapture([{ title: raw }]);
+      setText("");
       setHint("Saved without AI (network issue).");
     } finally {
       setLoading(false);
     }
   }
 
-  function handleMic() {
-    if (loading) return;
-    if (listening) {
-      recRef.current?.stop();
-      return;
-    }
-    const rec = getRecognition();
-    if (!rec) {
-      textareaRef.current?.focus();
-      setHint("Now tap the 🎤 on your keyboard and start talking.");
-      return;
-    }
-    baseRef.current = text ? text.trimEnd() + " " : "";
-    rec.lang = navigator.language || "en-US";
-    rec.interimResults = true;
-    rec.continuous = false;
-    rec.onresult = (e) => {
-      let transcript = "";
-      for (let i = 0; i < e.results.length; i++) {
-        transcript += e.results[i][0].transcript;
-      }
-      setText(baseRef.current + transcript);
-    };
-    rec.onend = () => setListening(false);
-    rec.onerror = () => setListening(false);
-    recRef.current = rec;
-    setHint("");
-    setListening(true);
-    rec.start();
-  }
-
   return (
     <div className="screen">
       <div className="capture">
-        <div className="capture__brand">
-          do<sup>s</sup>
+        <div>
+          <div className="capture__brand">
+            do<sup>s</sup>
+          </div>
+          <div className="capture__tagline">
+            The whole family, on the same page.
+          </div>
         </div>
 
         <textarea
-          ref={textareaRef}
           className="capture__input"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="What's on your mind?"
+          placeholder="book a dentist appointment"
           autoFocus
           disabled={loading}
         />
 
-        <div className="capture__opts">
-          <div className="capture__who">
-            {ASSIGNEE_OPTS.map((a) => (
-              <button
-                key={a}
-                type="button"
-                className={`opt opt--${a.toLowerCase()}${
-                  assignee === a ? " opt--on" : ""
-                }`}
-                onClick={() => setAssignee(assignee === a ? "" : a)}
-              >
-                {a}
-              </button>
-            ))}
-          </div>
-          <div className="capture__who">
-            {PRIORITY_OPTS.map((p) => (
-              <button
-                key={p}
-                type="button"
-                className={`opt opt--${p}${priority === p ? " opt--on" : ""}`}
-                onClick={() => setPriority(priority === p ? "" : p)}
-              >
-                {p}
-              </button>
-            ))}
-          </div>
-          <div className="capture__when">
-            <input
-              className="capture__date"
-              type="date"
-              value={due}
-              onChange={(e) => setDue(e.target.value)}
-              aria-label="Deadline date"
-            />
-            <input
-              className="capture__time-in"
-              type="time"
-              value={remindAt}
-              onChange={(e) => setRemindAt(e.target.value)}
-              aria-label="Reminder time"
-            />
-          </div>
+        <div className="capture__voice">
+          <span className="capture__voice-icon">
+            <MicIcon />
+          </span>
+          <span>
+            <span className="capture__voice-lead">Prefer voice?</span> Dictate
+            with your keyboard mic
+          </span>
         </div>
 
-        <div className="capture__actions">
-          <button
-            className="capture__save"
-            onClick={handleSave}
-            disabled={!canSave}
-          >
-            {loading ? "Thinking…" : "Add to inbox"}
-          </button>
-          <button
-            className={`capture__mic${listening ? " capture__mic--on" : ""}`}
-            onClick={handleMic}
-            aria-label="Voice input"
-            aria-pressed={listening}
-            disabled={loading}
-          >
-            <MicIcon />
-          </button>
-        </div>
+        <button
+          className="capture__save"
+          onClick={handleSave}
+          disabled={!canSave}
+        >
+          {loading ? (
+            "Thinking…"
+          ) : (
+            <>
+              <SparkleIcon /> Add to inbox
+            </>
+          )}
+        </button>
 
         <p className="capture__hint">
-          {hint || (listening ? "Listening… speak now" : defaultHint)}
+          {hint || "AI sorts it into tasks — sets priority, time, deadline & who."}
         </p>
       </div>
     </div>

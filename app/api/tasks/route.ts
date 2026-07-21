@@ -137,6 +137,12 @@ export async function POST(req: Request) {
               ? (patch.remindAt as string)
               : undefined;
         }
+        if ("due" in patch) {
+          u.due =
+            typeof patch.due === "string" && /^\d{4}-\d{2}-\d{2}/.test(patch.due)
+              ? (patch.due as string)
+              : undefined;
+        }
         return u;
       });
       await writeTasks(next);

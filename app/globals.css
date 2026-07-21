@@ -119,50 +119,150 @@ textarea {
   border-color: var(--accent);
 }
 
-.capture__opts {
+.capture__tagline {
+  margin-top: 4px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* ---- Capture chip toolbar (one row) ---- */
+.chipbar {
+  display: flex;
+  gap: 8px;
+}
+.chipbar__chip {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chipbar__chip svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+}
+.chipbar__chip--active {
+  border-color: var(--muted);
+}
+.chipbar__chip--mom {
+  background: rgba(242, 167, 204, 0.14);
+  color: var(--mom);
+  border-color: var(--mom);
+}
+.chipbar__chip--dad {
+  background: rgba(147, 184, 242, 0.14);
+  color: var(--dad);
+  border-color: var(--dad);
+}
+.chipbar__chip--kid {
+  background: rgba(240, 207, 140, 0.14);
+  color: var(--kid);
+  border-color: var(--kid);
+}
+.chipbar__chip--high {
+  background: rgba(240, 160, 156, 0.14);
+  color: var(--danger);
+  border-color: var(--danger);
+}
+.chipbar__chip--medium {
+  background: rgba(240, 214, 140, 0.14);
+  color: var(--warn);
+  border-color: var(--warn);
+}
+.chipbar__chip--low {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--border);
+}
+.chipbar__chip--date {
+  background: rgba(182, 240, 156, 0.14);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.chipbar__chip--time {
+  background: rgba(240, 214, 140, 0.14);
+  color: var(--warn);
+  border-color: var(--warn);
+}
+
+/* ---- Capture popover panel ---- */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
-.capture__who {
+.panel__opts {
   display: flex;
   gap: 8px;
 }
-.capture__who .opt {
+.panel__opts .opt {
   flex: 1;
 }
-.capture__when {
-  display: flex;
-  gap: 8px;
-}
-.capture__date,
-.capture__time-in {
-  flex: 1;
+.panel__input {
+  width: 100%;
   min-width: 0;
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: 12px;
   color: var(--text);
-  padding: 12px 14px;
+  padding: 11px 13px;
   font-size: 15px;
   color-scheme: dark;
 }
 
-.capture__actions {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
 .capture__save {
-  flex: 1;
-  height: 64px;
+  flex: 0 0 auto;
+  width: 100%;
+  height: 60px;
   border-radius: 18px;
   background: var(--accent);
   color: #0e0f13;
   font-size: 18px;
   font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   transition: transform 0.05s ease, background 0.15s ease;
+}
+.capture__save svg {
+  width: 20px;
+  height: 20px;
+}
+
+.capture__voice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #8a8b93;
+}
+.capture__voice-icon {
+  display: inline-flex;
+  color: var(--accent);
+}
+.capture__voice-icon svg {
+  width: 16px;
+  height: 16px;
+}
+.capture__voice-lead {
+  color: var(--muted);
 }
 .capture__save:active {
   transform: scale(0.98);
@@ -353,7 +453,7 @@ textarea {
 .task__label {
   font-size: 13px;
   color: var(--muted);
-  width: 52px;
+  width: 64px;
   flex: 0 0 auto;
 }
 .task__opts {

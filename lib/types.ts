@@ -21,6 +21,7 @@ export interface TaskPatch {
   title?: string;
   priority?: Priority;
   assignee?: Assignee;
+  due?: string; // "YYYY-MM-DD", "" clears the deadline
   remindAt?: string; // "" clears the reminder
 }
 

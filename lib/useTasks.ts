@@ -81,7 +81,11 @@ export function useTasks() {
     [send],
   );
 
-  const todayTasks = tasks.filter((t) => isToday(t.due) || isToday(t.createdAt));
+  // "Today" = tasks whose deadline is today, or timed-for-today tasks
+  // (a reminder time set, with no future deadline). No catch-all on createdAt.
+  const todayTasks = tasks.filter(
+    (t) => isToday(t.due) || (!!t.remindAt && !t.due),
+  );
 
   return {
     tasks,
