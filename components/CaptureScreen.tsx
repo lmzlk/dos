@@ -64,7 +64,7 @@ export function CaptureScreen({
               do<sup>s</sup>
             </div>
             <div className="capture__tagline">
-              The whole family, on the same page.
+              The whole family, on the same page
             </div>
           </div>
           <button type="button" className="capture__invite" onClick={copyLink}>
