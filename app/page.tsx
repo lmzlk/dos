@@ -9,14 +9,14 @@ import { TabBar, type TabKey } from "@/components/TabBar";
 
 export default function Home() {
   const [tab, setTab] = useState<TabKey>("capture");
-  const { tasks, todayTasks, addTask, toggleTask } = useTasks();
+  const { tasks, todayTasks, addTasks, toggleTask } = useTasks();
 
   return (
     <div className="app">
       {tab === "capture" && (
         <CaptureScreen
           onCapture={(items) => {
-            items.forEach((partial) => addTask(partial));
+            addTasks(items);
             setTab("inbox");
           }}
         />

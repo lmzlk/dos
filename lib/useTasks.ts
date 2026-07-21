@@ -1,19 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import type { Task } from "./types";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { Task, Assignee } from "./types";
 
-const STORAGE_KEY = "dos.tasks.v1";
-
-function loadTasks(): Task[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as Task[]) : [];
-  } catch {
-    return [];
-  }
-}
+type NewTask = Partial<Task> & { title: string };
 
 function isToday(iso?: string): boolean {
   if (!iso) return false;
@@ -27,62 +17,80 @@ function isToday(iso?: string): boolean {
 }
 
 /**
- * Client-side task store backed by localStorage. No backend yet —
- * this is the seam where the AI parsing + sync layer will plug in later.
+ * Shared family task store backed by a server list (Redis via /api/tasks).
+ * Everyone on the same link sees the same tasks. We poll every few seconds
+ * so a change on Mom's phone shows up on Dad's soon after.
  */
 export function useTasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [hydrated, setHydrated] = useState(false);
+  const busy = useRef(false);
 
-  // Load once on mount (avoids SSR/localStorage mismatch).
-  useEffect(() => {
-    setTasks(loadTasks());
-    setHydrated(true);
-  }, []);
-
-  // Persist on every change once hydrated.
-  useEffect(() => {
-    if (!hydrated) return;
+  const refresh = useCallback(async () => {
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+      const res = await fetch("/api/tasks", { cache: "no-store" });
+      const data = await res.json();
+      if (Array.isArray(data.tasks)) setTasks(data.tasks);
     } catch {
-      // ignore write failures (private mode, quota, etc.)
+      // keep last known list on transient errors
+    } finally {
+      setHydrated(true);
     }
-  }, [tasks, hydrated]);
-
-  const addTask = useCallback((partial: Partial<Task> & { title: string }) => {
-    const task: Task = {
-      id:
-        typeof crypto !== "undefined" && "randomUUID" in crypto
-          ? crypto.randomUUID()
-          : String(Date.now()) + Math.random().toString(16).slice(2),
-      title: partial.title,
-      priority: partial.priority ?? "medium",
-      estimate: partial.estimate,
-      due: partial.due,
-      assignee: partial.assignee ?? "",
-      status: partial.status ?? "todo",
-      createdAt: partial.createdAt ?? new Date().toISOString(),
-    };
-    setTasks((prev) => [task, ...prev]);
-    return task;
   }, []);
 
-  const toggleTask = useCallback((id: string) => {
-    setTasks((prev) =>
-      prev.map((t) =>
-        t.id === id
-          ? { ...t, status: t.status === "done" ? "todo" : "done" }
-          : t,
-      ),
-    );
+  useEffect(() => {
+    refresh();
+    const id = setInterval(() => {
+      // don't poll on top of a write in flight (avoids flicker)
+      if (!busy.current) refresh();
+    }, 5000);
+    return () => clearInterval(id);
+  }, [refresh]);
+
+  const send = useCallback(async (body: Record<string, unknown>) => {
+    busy.current = true;
+    try {
+      const res = await fetch("/api/tasks", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (Array.isArray(data.tasks)) setTasks(data.tasks);
+    } catch {
+      // ignore; next poll will reconcile
+    } finally {
+      busy.current = false;
+    }
   }, []);
 
-  const removeTask = useCallback((id: string) => {
-    setTasks((prev) => prev.filter((t) => t.id !== id));
-  }, []);
+  const addTasks = useCallback(
+    (items: NewTask[]) => send({ action: "add", tasks: items }),
+    [send],
+  );
+  const toggleTask = useCallback(
+    (id: string) => send({ action: "toggle", id }),
+    [send],
+  );
+  const assignTask = useCallback(
+    (id: string, assignee: Assignee) => send({ action: "assign", id, assignee }),
+    [send],
+  );
+  const removeTask = useCallback(
+    (id: string) => send({ action: "remove", id }),
+    [send],
+  );
 
   const todayTasks = tasks.filter((t) => isToday(t.due) || isToday(t.createdAt));
 
-  return { tasks, todayTasks, hydrated, addTask, toggleTask, removeTask };
+  return {
+    tasks,
+    todayTasks,
+    hydrated,
+    addTasks,
+    toggleTask,
+    assignTask,
+    removeTask,
+    refresh,
+  };
 }
