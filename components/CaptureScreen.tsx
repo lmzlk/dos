@@ -4,21 +4,44 @@ import { useState } from "react";
 import { MicIcon } from "./icons";
 import type { Task } from "@/lib/types";
 
+type NewTask = Partial<Task> & { title: string };
+
 export function CaptureScreen({
   onCapture,
 }: {
-  onCapture: (partial: Partial<Task> & { title: string }) => void;
+  onCapture: (tasks: NewTask[]) => void;
 }) {
   const [text, setText] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const canSave = text.trim().length > 0;
+  const canSave = text.trim().length > 0 && !loading;
 
-  function handleSave() {
-    if (!canSave) return;
-    // For now we just drop the raw text into the inbox as a single task.
-    // Later the AI layer will split this into structured tasks.
-    onCapture({ title: text.trim() });
-    setText("");
+  async function handleSave() {
+    const raw = text.trim();
+    if (!raw || loading) return;
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/parse", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ text: raw }),
+      });
+      const data = await res.json();
+      const tasks: NewTask[] =
+        res.ok && Array.isArray(data.tasks) && data.tasks.length > 0
+          ? data.tasks
+          : [{ title: raw }]; // fallback: keep the raw dump as one task
+      onCapture(tasks);
+      setText("");
+    } catch {
+      onCapture([{ title: raw }]);
+      setText("");
+      setError("Saved without AI (network issue).");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -34,6 +57,7 @@ export function CaptureScreen({
           onChange={(e) => setText(e.target.value)}
           placeholder="What's on your mind?"
           autoFocus
+          disabled={loading}
         />
 
         <div className="capture__actions">
@@ -42,19 +66,20 @@ export function CaptureScreen({
             onClick={handleSave}
             disabled={!canSave}
           >
-            Add to inbox
+            {loading ? "Thinking…" : "Add to inbox"}
           </button>
           <button
             className="capture__mic"
-            aria-label="Voice input (coming soon)"
-            title="Voice input — coming soon"
+            aria-label="Voice input — tap the mic on your keyboard"
+            title="Voice input — tap the mic on your keyboard"
+            disabled={loading}
           >
             <MicIcon />
           </button>
         </div>
 
         <p className="capture__hint">
-          Dump everything — the AI will sort it into tasks later.
+          {error || "Dump everything — the AI will sort it into tasks."}
         </p>
       </div>
     </div>

@@ -15,8 +15,8 @@ export default function Home() {
     <div className="app">
       {tab === "capture" && (
         <CaptureScreen
-          onCapture={(partial) => {
-            addTask(partial);
+          onCapture={(items) => {
+            items.forEach((partial) => addTask(partial));
             setTab("inbox");
           }}
         />
