@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { SparkleIcon, MicIcon } from "./icons";
+import { SparkleIcon, MicIcon, UserPlusIcon } from "./icons";
 import type { Task } from "@/lib/types";
 
 type NewTask = Partial<Task> & { title: string };
@@ -58,19 +58,17 @@ export function CaptureScreen({
   return (
     <div className="screen">
       <div className="capture">
-        <div>
-          <div className="capture__brand">
-            do<sup>s</sup>
+        <div className="capture__head">
+          <div>
+            <div className="capture__brand">
+              do<sup>s</sup>
+            </div>
+            <div className="capture__tagline">
+              The whole family, on the same page.
+            </div>
           </div>
-          <div className="capture__tagline">
-            The whole family, on the same page.
-          </div>
-          <button
-            type="button"
-            className="capture__invite"
-            onClick={copyLink}
-          >
-            {copied ? "Link copied" : "Invite family — copy link"}
+          <button type="button" className="capture__invite" onClick={copyLink}>
+            <UserPlusIcon /> {copied ? "Copied" : "Invite"}
           </button>
         </div>
 
