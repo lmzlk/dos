@@ -5,9 +5,15 @@ import type { Task, Assignee } from "@/lib/types";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// One shared family list lives under this key. Everyone who opens the
-// public link reads and writes the same list — no accounts needed.
-const KEY = "dos:tasks:v1";
+// Each family room gets its own list under dos:tasks:{room}, so families
+// don't see each other's tasks. Whoever has the link is in that family.
+function keyFor(room: unknown): string {
+  const safe =
+    typeof room === "string" && /^[a-zA-Z0-9_-]{3,40}$/.test(room)
+      ? room
+      : "shared";
+  return `dos:tasks:${safe}`;
+}
 
 // Reuse the connection across warm invocations.
 let client: Redis | null = null;
@@ -20,8 +26,8 @@ function redis(): Redis {
   return client;
 }
 
-async function readTasks(): Promise<Task[]> {
-  const raw = await redis().get(KEY);
+async function readTasks(key: string): Promise<Task[]> {
+  const raw = await redis().get(key);
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
@@ -31,8 +37,8 @@ async function readTasks(): Promise<Task[]> {
   }
 }
 
-async function writeTasks(tasks: Task[]): Promise<void> {
-  await redis().set(KEY, JSON.stringify(tasks));
+async function writeTasks(key: string, tasks: Task[]): Promise<void> {
+  await redis().set(key, JSON.stringify(tasks));
 }
 
 function newId(): string {
@@ -42,9 +48,11 @@ function newId(): string {
   );
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const room = new URL(req.url).searchParams.get("room");
+  const key = keyFor(room);
   try {
-    return NextResponse.json({ tasks: await readTasks() });
+    return NextResponse.json({ tasks: await readTasks(key) });
   } catch (e) {
     return NextResponse.json({ tasks: [], error: String(e) }, { status: 500 });
   }
@@ -59,9 +67,10 @@ export async function POST(req: Request) {
   }
 
   const action = body.action;
+  const key = keyFor(body.room);
 
   try {
-    const tasks = await readTasks();
+    const tasks = await readTasks(key);
 
     if (action === "add" && Array.isArray(body.tasks)) {
       const now = new Date().toISOString();
@@ -89,7 +98,7 @@ export async function POST(req: Request) {
           createdAt: now,
         }));
       const next = [...toAdd, ...tasks];
-      await writeTasks(next);
+      await writeTasks(key, next);
       return NextResponse.json({ tasks: next });
     }
 
@@ -99,7 +108,7 @@ export async function POST(req: Request) {
           ? { ...t, status: t.status === "done" ? "todo" : "done" }
           : t,
       );
-      await writeTasks(next as Task[]);
+      await writeTasks(key, next as Task[]);
       return NextResponse.json({ tasks: next });
     }
 
@@ -145,13 +154,13 @@ export async function POST(req: Request) {
         }
         return u;
       });
-      await writeTasks(next);
+      await writeTasks(key, next);
       return NextResponse.json({ tasks: next });
     }
 
     if (action === "remove" && typeof body.id === "string") {
       const next = tasks.filter((t) => t.id !== body.id);
-      await writeTasks(next);
+      await writeTasks(key, next);
       return NextResponse.json({ tasks: next });
     }
 

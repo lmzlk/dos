@@ -14,8 +14,19 @@ export function CaptureScreen({
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const [hint, setHint] = useState("");
+  const [copied, setCopied] = useState(false);
 
   const canSave = text.trim().length > 0 && !loading;
+
+  async function copyLink() {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      setCopied(false);
+    }
+  }
 
   async function handleSave() {
     const raw = text.trim();
@@ -54,6 +65,13 @@ export function CaptureScreen({
           <div className="capture__tagline">
             The whole family, on the same page.
           </div>
+          <button
+            type="button"
+            className="capture__invite"
+            onClick={copyLink}
+          >
+            {copied ? "Link copied" : "Invite family — copy link"}
+          </button>
         </div>
 
         <textarea

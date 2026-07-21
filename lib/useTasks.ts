@@ -21,14 +21,16 @@ function isToday(iso?: string): boolean {
  * Everyone on the same link sees the same tasks. We poll every few seconds
  * so a change on Mom's phone shows up on Dad's soon after.
  */
-export function useTasks() {
+export function useTasks(room: string) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const busy = useRef(false);
 
   const refresh = useCallback(async () => {
     try {
-      const res = await fetch("/api/tasks", { cache: "no-store" });
+      const res = await fetch(`/api/tasks?room=${encodeURIComponent(room)}`, {
+        cache: "no-store",
+      });
       const data = await res.json();
       if (Array.isArray(data.tasks)) setTasks(data.tasks);
     } catch {
@@ -36,7 +38,7 @@ export function useTasks() {
     } finally {
       setHydrated(true);
     }
-  }, []);
+  }, [room]);
 
   useEffect(() => {
     refresh();
@@ -47,22 +49,25 @@ export function useTasks() {
     return () => clearInterval(id);
   }, [refresh]);
 
-  const send = useCallback(async (body: Record<string, unknown>) => {
-    busy.current = true;
-    try {
-      const res = await fetch("/api/tasks", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json();
-      if (Array.isArray(data.tasks)) setTasks(data.tasks);
-    } catch {
-      // ignore; next poll will reconcile
-    } finally {
-      busy.current = false;
-    }
-  }, []);
+  const send = useCallback(
+    async (body: Record<string, unknown>) => {
+      busy.current = true;
+      try {
+        const res = await fetch("/api/tasks", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ ...body, room }),
+        });
+        const data = await res.json();
+        if (Array.isArray(data.tasks)) setTasks(data.tasks);
+      } catch {
+        // ignore; next poll will reconcile
+      } finally {
+        busy.current = false;
+      }
+    },
+    [room],
+  );
 
   const addTasks = useCallback(
     (items: NewTask[]) => send({ action: "add", tasks: items }),
